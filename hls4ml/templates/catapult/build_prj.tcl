@@ -62,25 +62,27 @@ foreach i [glob -nocomplain firmware/weights/*.txt] {
   file copy -force $i weights
 }
 
-# Parse parameters.h to determine config info to control directives/pragmas
-set IOType io_stream
-if { ![file exists firmware/parameters.h] } {
-  logfile message "Could not locate firmware/parameters.h. Unable to determine network configuration.\n" warning
-} else {
-  set pf [open "firmware/parameters.h" "r"]
-  while {![eof $pf]} {
-    gets $pf line
-    if { [string match {*io_type = nnet::io_stream*} $line] } {
-      set IoType io_stream
-      break
-    }
-  }
-  close $pf
-}
-
-if { $IOType == "io_stream" } {
-solution options set Architectural/DefaultRegisterThreshold 2050
-}
+#begin: csm28-smart-pix
+## Parse parameters.h to determine config info to control directives/pragmas
+#set IOType io_stream
+#if { ![file exists firmware/parameters.h] } {
+#  logfile message "Could not locate firmware/parameters.h. Unable to determine network configuration.\n" warning
+#} else {
+#  set pf [open "firmware/parameters.h" "r"]
+#  while {![eof $pf]} {
+#    gets $pf line
+#    if { [string match {*io_type = nnet::io_stream*} $line] } {
+#      set IoType io_stream
+#      break
+#    }
+#  }
+#  close $pf
+#}
+#
+#if { $IOType == "io_stream" } {
+#solution options set Architectural/DefaultRegisterThreshold 2050
+#}
+#end: csm28-smart-pix
 
 flow package require /SCVerify
 # Ideally, the path to the weights/testbench data should be runtime configurable
@@ -117,52 +119,55 @@ if {$opt(synth)} {
   go assembly
 
   # Specifically for io_stream
-  if { $IOType == "io_stream" } {
-    # Bug in Catapult - hls_resource inserted by catapult_writer.py not applied to static var. workaround is placed in build_prj.tcl
-    directive set /myproject/layer*_out:cns -match glob -MAP_TO_MODULE ccs_ioport.ccs_pipe
-    #directive set /myproject/layer*_out:cns -match glob -MAP_TO_MODULE Xilinx_FIFO.FIFO_SYNC
+#begin: csm28-smart-pix
+#  if { $IOType == "io_stream" } {
+#    # Bug in Catapult - hls_resource inserted by catapult_writer.py not applied to static var. workaround is placed in build_prj.tcl
+#    directive set /myproject/layer*_out:cns -match glob -MAP_TO_MODULE ccs_ioport.ccs_pipe
+#    #directive set /myproject/layer*_out:cns -match glob -MAP_TO_MODULE Xilinx_FIFO.FIFO_SYNC
+#
+##    # Pipeline init interval for dense_wrapper (should be a pragma in nnet_dense_stream.h)
+##    directive set /myproject/nnet::dense*/core/nnet::dense* -match glob -PIPELINE_INIT_INTERVAL 1
+#
+#    # Workaround for pipeline init interval for streaming dense() function - the conditional pragmas
+#    # at nnet_utils/nnet_dense_stream.h:43 and 60 do not seem to be honored.
+#    catch {directive set /myproject/nnet::dense*/core/main -match glob -PIPELINE_INIT_INTERVAL 1}
+#
+#if { 0 } {
+#    # Control internal interfaces
+#    directive set /myproject/nnet::dense*/data_stream:rsc -match glob -MAP_TO_MODULE ccs_ioport.ccs_in_wait
+#    directive set /myproject/nnet::dense*/res_stream:rsc -match glob -MAP_TO_MODULE ccs_ioport.ccs_out_wait
+#    foreach {p v} [solution get /TOP/PARTITIONS/*/name -checkpath 0 -match glob -ret pv] {
+#      if { $v == "myproject:core" } {
+#        foreach {p1 v1} [solution get [file dirname $p]/INTERFACE/*/DATAMODE -checkpath 0 -match glob -ret pv] {
+#          # Skip clock/reset
+#          if { [solution get [file dirname $p1]/FF_CONTROL -checkpath 0 -match glob -ret v] != {} } { continue }
+#          set varname [solution get [file dirname $p1]/name -checkpath 0]
+#          # Skip non-hls4ml layer interconnect names
+#          if { ![string match {layer*_out} $varname] } { continue }
+#          set rscname [solution get [file dirname $p1]/PROPERTIES/RESOURCE/VALUE -checkpath 0]
+#          switch -- $v1 {
+#            "IN" { directive set /myproject/myproject:core/$rscname -match glob -MAP_TO_MODULE ccs_ioport.ccs_in_wait }
+#            "OUT" { directive set /myproject/myproject:core/$rscname -match glob -MAP_TO_MODULE ccs_ioport.ccs_out_wait }
+#          }
+#        }
+#        break
+#      }
+#    }
+#
+#    # Control internal arrays
+#    directive set /myproject/nnet::dense*/core/data:rsc -match glob -MAP_TO_MODULE {[Register]}
+#    directive set /myproject/nnet::dense*/core/res:rsc -match glob -MAP_TO_MODULE {[Register]}
+#    directive set /myproject/nnet::dense*/core/DataPrepare*:rsc -match glob -MAP_TO_MODULE {[Register]}
+#    directive set /myproject/nnet::dense*/core/*:mult:rsc -match glob -MAP_TO_MODULE {[Register]}
+#    directive set /myproject/nnet::dense*/core/*:acc:rsc -match glob -MAP_TO_MODULE {[Register]}
+#    directive set /myproject/nnet::dense*/core/ResWrite*:rsc -match glob -MAP_TO_MODULE {[Register]}
+#
+#    directive set /myproject/myproject:core/core/ReLUActLoop*:rsc -match glob -MAP_TO_MODULE {[Register]}
+#}
+#
+#  }
+#end: cms28-smart-pix
 
-#    # Pipeline init interval for dense_wrapper (should be a pragma in nnet_dense_stream.h)
-#    directive set /myproject/nnet::dense*/core/nnet::dense* -match glob -PIPELINE_INIT_INTERVAL 1
-
-    # Workaround for pipeline init interval for streaming dense() function - the conditional pragmas
-    # at nnet_utils/nnet_dense_stream.h:43 and 60 do not seem to be honored.
-    catch {directive set /myproject/nnet::dense*/core/main -match glob -PIPELINE_INIT_INTERVAL 1}
-
-if { 0 } {
-    # Control internal interfaces
-    directive set /myproject/nnet::dense*/data_stream:rsc -match glob -MAP_TO_MODULE ccs_ioport.ccs_in_wait
-    directive set /myproject/nnet::dense*/res_stream:rsc -match glob -MAP_TO_MODULE ccs_ioport.ccs_out_wait
-    foreach {p v} [solution get /TOP/PARTITIONS/*/name -checkpath 0 -match glob -ret pv] {
-      if { $v == "myproject:core" } {
-        foreach {p1 v1} [solution get [file dirname $p]/INTERFACE/*/DATAMODE -checkpath 0 -match glob -ret pv] {
-          # Skip clock/reset
-          if { [solution get [file dirname $p1]/FF_CONTROL -checkpath 0 -match glob -ret v] != {} } { continue }
-          set varname [solution get [file dirname $p1]/name -checkpath 0]
-          # Skip non-hls4ml layer interconnect names
-          if { ![string match {layer*_out} $varname] } { continue }
-          set rscname [solution get [file dirname $p1]/PROPERTIES/RESOURCE/VALUE -checkpath 0]
-          switch -- $v1 {
-            "IN" { directive set /myproject/myproject:core/$rscname -match glob -MAP_TO_MODULE ccs_ioport.ccs_in_wait }
-            "OUT" { directive set /myproject/myproject:core/$rscname -match glob -MAP_TO_MODULE ccs_ioport.ccs_out_wait }
-          }
-        }
-        break
-      }
-    }
-
-    # Control internal arrays
-    directive set /myproject/nnet::dense*/core/data:rsc -match glob -MAP_TO_MODULE {[Register]}
-    directive set /myproject/nnet::dense*/core/res:rsc -match glob -MAP_TO_MODULE {[Register]}
-    directive set /myproject/nnet::dense*/core/DataPrepare*:rsc -match glob -MAP_TO_MODULE {[Register]}
-    directive set /myproject/nnet::dense*/core/*:mult:rsc -match glob -MAP_TO_MODULE {[Register]}
-    directive set /myproject/nnet::dense*/core/*:acc:rsc -match glob -MAP_TO_MODULE {[Register]}
-    directive set /myproject/nnet::dense*/core/ResWrite*:rsc -match glob -MAP_TO_MODULE {[Register]}
-
-    directive set /myproject/myproject:core/core/ReLUActLoop*:rsc -match glob -MAP_TO_MODULE {[Register]}
-}
-
-  }
   go architect
 
   go allocate

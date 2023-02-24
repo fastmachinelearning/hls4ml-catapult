@@ -1,13 +1,18 @@
 #!/bin/bash
 
+if [[ -z "${MGC_HOME}" ]]; then
+    echo "ERROR: Variable MGC_HOME is not defined. Sourcing the Siemens Catapult scripts should fix this."
+    return
+fi
+
 CC=g++
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    CFLAGS="-O3 -fPIC -std=c++11 -fno-gnu-unique"
+    CFLAGS="-O3 -fPIC -std=c++17 -fno-gnu-unique"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    CFLAGS="-O3 -fPIC -std=c++11"
+    CFLAGS="-O3 -fPIC -std=c++17"
 fi
 LDFLAGS=
-INCFLAGS="-Ifirmware/ac_types/include -Ifirmware/ac_math/include -Ifirmware/ac_simutils/include"
+INCFLAGS="-I$MGC_HOME/shared/include"
 PROJECT=myproject
 LIB_STAMP=mystamp
 

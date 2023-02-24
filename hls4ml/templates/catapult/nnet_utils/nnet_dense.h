@@ -34,7 +34,10 @@ struct dense_config
     using product = nnet::product::mult<x_T, y_T>;
 };
 
-#pragma hls_design block
+//begin: cms28-smart-pix
+// Let's inline this function.
+//#pragma hls_design block
+//end: cms28-smart-pix
 template<class data_T, class res_T, typename CONFIG_T>
 void dense(
     data_T    data[CONFIG_T::n_in],

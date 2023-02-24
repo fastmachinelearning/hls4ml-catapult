@@ -87,7 +87,10 @@ void  linear(data_T data[CONFIG_T::n_in], res_T res[CONFIG_T::n_in])
 // *************************************************
 //       RELU Activation
 // *************************************************
-#pragma hls_design block
+//begin: cms28-smart-pix
+// Let's inline this function.
+//#pragma hls_design block
+//end: cms28-smart-pix
 template<class data_T, class res_T, typename CONFIG_T>
 void  relu(data_T data[CONFIG_T::n_in], res_T res[CONFIG_T::n_in])
 {

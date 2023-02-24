@@ -36,8 +36,12 @@ void dense_latency(
     typename CONFIG_T::bias_t    biases[CONFIG_T::n_out])
 {
   // For Catapult, add an extra scope so that we can apply the pipeline pragma as if it applied to the function
-  #pragma hls_pipeline_init_interval II_reuse_factor
+  //begin: cms28-smart-pix
+  // Force II=1
+  //#pragma hls_pipeline_init_interval II_reuse_factor
+  #pragma hls_pipeline_init_interval 1
   #pragma hls_preserve_loop yes
+  //end: cms28-smart-pix
   do {
     data_T cache;
     typename CONFIG_T::accum_t mult[CONFIG_T::n_in*CONFIG_T::n_out];
