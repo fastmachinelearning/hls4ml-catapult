@@ -2,9 +2,9 @@
 
 CC=g++
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    CFLAGS="-O3 -fPIC -std=c++11 -fno-gnu-unique"
+    CFLAGS="-O3 -fPIC -std=c++11 -fno-gnu-unique -B/usr/lib/x86_64-linux-gnu"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    CFLAGS="-O3 -fPIC -std=c++11"
+    CFLAGS="-O3 -fPIC -std=c++11 -B/usr/lib/x86_64-linux-gnu"
 fi
 LDFLAGS=
 INCFLAGS="-Ifirmware/ap_types/"

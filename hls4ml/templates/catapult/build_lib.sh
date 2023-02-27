@@ -7,9 +7,9 @@ fi
 
 CC=g++
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    CFLAGS="-O3 -fPIC -std=c++17 -fno-gnu-unique"
+    CFLAGS="-O3 -fPIC -std=c++17 -fno-gnu-unique -B/usr/lib/x86_64-linux-gnu"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    CFLAGS="-O3 -fPIC -std=c++17"
+    CFLAGS="-O3 -fPIC -std=c++17 -B/usr/lib/x86_64-linux-gnu"
 fi
 LDFLAGS=
 INCFLAGS="-I$MGC_HOME/shared/include"
