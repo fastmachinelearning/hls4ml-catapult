@@ -25,6 +25,11 @@ def create_config(output_dir='my-hls-test', project_name='myproject', backend='V
 def _get_precision_from_quantizer(quantizer):
     import qkeras
 
+    from hls4ml.model.types import RoundingMode, SaturationMode
+
+    rounding_mode = None #RoundingMode.TRN
+    saturation_mode = None #SaturationMode.WRAP
+
     if isinstance(quantizer, str):
         quantizer_obj = qkeras.get_quantizer(quantizer)
         quantizer = {}
@@ -49,6 +54,8 @@ def _get_precision_from_quantizer(quantizer):
         bits = int(quantizer['config']['bits'])
         # if integer isn't specified, it should be the same as bits
         integer = int(quantizer['config'].get('integer', bits - 1)) + 1
+        rounding_mode = RoundingMode.RND
+        saturation_mode = SaturationMode.SAT
         if quantizer['class_name'] == 'quantized_relu':
             signed = False
             integer -= 1
@@ -65,7 +72,7 @@ def _get_precision_from_quantizer(quantizer):
     decimal = bits - integer
 
     if decimal > 0:
-        return hls4ml.model.types.FixedPrecisionType(width=bits, integer=integer, signed=signed)
+        return hls4ml.model.types.FixedPrecisionType(width=bits, integer=integer, signed=signed, rounding_mode=rounding_mode, saturation_mode=saturation_mode)
     else:
         return hls4ml.model.types.IntegerPrecisionType(width=integer, signed=signed)
 
